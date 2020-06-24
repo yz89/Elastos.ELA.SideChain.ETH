@@ -374,8 +374,17 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 	delay := time.Unix(int64(header.Time), 0).Sub(p.dispatcher.GetNowTime())
 	time.Sleep(delay)
 
+	sealBlock := block
 	select {
 	case confirm := <-p.confirmCh:
+		sealHeader := types.CopyHeader(header)
+		sealBuf := &bytes.Buffer{}
+		if err := confirm.Serialize(sealBuf); err != nil {
+			return err
+		}
+		copy(sealHeader.Extra[:], sealBuf.Bytes())
+		sealBlock = block.WithSeal(sealHeader)
+
 		log.Info("Received confirm", "proposal", confirm.Proposal.Hash().String())
 		p.dispatcher.FinishedProposal()
 		break
@@ -386,10 +395,11 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 		log.Warn("pbft seal is stoped")
 		return nil
 	}
+
 	go func() {
 		select {
-		case results <- block:
-			p.CleanFinalConfirmedBlock(block.NumberU64())
+		case results <- sealBlock:
+			p.CleanFinalConfirmedBlock(sealBlock.NumberU64())
 		default:
 			dpos.Warn("Sealing result is not read by miner", "sealhash", SealHash(header))
 		}
