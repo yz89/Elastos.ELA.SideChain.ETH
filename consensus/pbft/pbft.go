@@ -12,7 +12,6 @@ import (
 
 	"github.com/elastos/Elastos.ELA.SideChain.ETH/common"
 	"github.com/elastos/Elastos.ELA.SideChain.ETH/consensus"
-	"github.com/elastos/Elastos.ELA.SideChain.ETH/consensus/clique"
 	"github.com/elastos/Elastos.ELA.SideChain.ETH/core"
 	"github.com/elastos/Elastos.ELA.SideChain.ETH/core/state"
 	"github.com/elastos/Elastos.ELA.SideChain.ETH/core/types"
@@ -24,7 +23,6 @@ import (
 	"github.com/elastos/Elastos.ELA/core/types/payload"
 
 	ecom "github.com/elastos/Elastos.ELA/common"
-	"github.com/elastos/Elastos.ELA/crypto"
 	daccount "github.com/elastos/Elastos.ELA/dpos/account"
 	"github.com/elastos/Elastos.ELA/dpos/dtime"
 	dmsg "github.com/elastos/Elastos.ELA/dpos/p2p/msg"
@@ -254,7 +252,12 @@ func (p *Pbft) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	if parent.Time+p.period > header.Time {
 		return ErrInvalidTimestamp
 	}
-	return p.verifySeal(chain, header, parents)
+
+	if seal {
+		return p.verifySeal(chain, header, parents)
+	}
+
+	return nil
 }
 
 func (p *Pbft) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
@@ -275,22 +278,20 @@ func (p *Pbft) verifySeal(chain consensus.ChainReader, header *types.Header, par
 		return errUnknownBlock
 	}
 
-	// Retrieve the signature from the header extra-data
-	if len(header.Extra) < extraSeal+extraVanity {
-		return errMissingSignature
-	}
-
-	publicKey := header.Extra[extraVanity : len(header.Extra)-extraSeal]
-	pubkey, err := crypto.DecodePoint(publicKey)
+	//fmt.Println("verify seal confirm hex, ", common.Bytes2Hex(header.Extra))
+	// Retrieve the confirm from the header extra-data
+	var confirm payload.Confirm
+	err := confirm.Deserialize(bytes.NewReader(header.Extra))
 	if err != nil {
 		return err
 	}
-	if !p.dispatcher.IsProducer(publicKey) {
-		return errUnauthorizedSigner
+	//fmt.Println("verify seal confirm", confirm)
+	err = p.verifyConfirm(&confirm)
+	if err != nil {
+		return err
 	}
-	signature := header.Extra[len(header.Extra)-extraSeal:]
-	err = crypto.Verify(*pubkey, clique.CliqueRLP(header), signature)
-	return err
+
+	return nil
 }
 
 func (p *Pbft) Prepare(chain consensus.ChainReader, header *types.Header) error {
@@ -315,16 +316,6 @@ func (p *Pbft) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	nowTime := uint64(p.dispatcher.GetNowTime().Unix())
 	if header.Time < nowTime {
 		header.Time = nowTime + p.period
-	}
-
-	// Ensure the extra data has all its components 32 + 65
-	if len(header.Extra) < extraVanity {
-		header.Extra = append(header.Extra, bytes.Repeat([]byte{0x00}, extraVanity-len(header.Extra))...)
-	}
-	if p.account != nil {
-		signer := p.account.PublicKeyBytes()
-		header.Extra = append(header.Extra, signer[:]...)
-		header.Extra = append(header.Extra, make([]byte, extraSeal)...)
 	}
 
 	return nil
@@ -358,32 +349,27 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 	if !p.IsOnduty() {
 		return errors.New("local singer is not on duty")
 	}
-	header := block.Header()
-	// Sign all the things!
-	length := len(header.Extra)
-	signature := p.account.Sign(clique.CliqueRLP(header))
-	copy(header.Extra[length-extraSeal:], signature)
-	block = block.WithSeal(header)
 	p.BroadPreBlock(block)
 
 	if err := p.StartProposal(block); err != nil {
 		return err
 	}
-
+	header := block.Header()
 	//Waiting for statistics of voting results
 	delay := time.Unix(int64(header.Time), 0).Sub(p.dispatcher.GetNowTime())
 	time.Sleep(delay)
 
-	sealBlock := block
 	select {
 	case confirm := <-p.confirmCh:
+		//fmt.Println("seal confirm, ", confirm)
 		sealHeader := types.CopyHeader(header)
-		sealBuf := &bytes.Buffer{}
+		sealBuf := new(bytes.Buffer)
 		if err := confirm.Serialize(sealBuf); err != nil {
 			return err
 		}
+		//fmt.Println("seal confirm hex string, ", common.Bytes2Hex(sealBuf.Bytes()))
 		copy(sealHeader.Extra[:], sealBuf.Bytes())
-		sealBlock = block.WithSeal(sealHeader)
+		block = block.WithSeal(sealHeader)
 
 		log.Info("Received confirm", "proposal", confirm.Proposal.Hash().String())
 		p.dispatcher.FinishedProposal()
@@ -398,8 +384,8 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 
 	go func() {
 		select {
-		case results <- sealBlock:
-			p.CleanFinalConfirmedBlock(sealBlock.NumberU64())
+		case results <- block:
+			p.CleanFinalConfirmedBlock(block.NumberU64())
 		default:
 			dpos.Warn("Sealing result is not read by miner", "sealhash", SealHash(header))
 		}
@@ -468,6 +454,12 @@ func SealHash(header *types.Header) (hash common.Hash) {
 	encodeSigHeader(hasher, header)
 	hasher.Sum(hash[:0])
 	return hash
+}
+
+func PbftRLP(header *types.Header) []byte {
+	b := new(bytes.Buffer)
+	encodeSigHeader(b, header)
+	return b.Bytes()
 }
 
 func encodeSigHeader(w io.Writer, header *types.Header) {
