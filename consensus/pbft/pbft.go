@@ -120,7 +120,7 @@ func New(cfg *params.PbftConfig, pbftKeystore string, password []byte, dataDir s
 		statusMap:       make(map[uint32]map[string]*dmsg.ConsensusStatus),
 		period:          5,
 	}
-	blockPool := dpos.NewBlockPool(pbft.onConfirmBlock, pbft.verifyConfirm, pbft.verifyBlock)
+	blockPool := dpos.NewBlockPool(pbft.onConfirmBlock, pbft.verifyConfirm, pbft.verifyBlock, DBlockSealHash)
 	pbft.blockPool = blockPool
 	dispatcher := dpos.NewDispatcher(producers, pbft.onConfirm, pbft.onUnConfirm,
 		10*time.Second, account.PublicKeyBytes(), medianTimeSouce, pbft)
@@ -196,7 +196,7 @@ func (p *Pbft) VerifyHeaders(chain consensus.ChainReader, headers []*types.Heade
 					err = consensus.ErrFutureBlock
 				}
 			}
-			if err == nil && !p.IsInBlockPool(header.Hash()) {
+			if err == nil && !p.IsInBlockPool(p.SealHash(header)) {
 				err = p.verifyHeader(chain, header, headers[:i], seals[i])
 			}
 
@@ -245,7 +245,8 @@ func (p *Pbft) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	} else {
 		parent = chain.GetHeader(header.ParentHash, number-1)
 	}
-	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
+
+	if parent == nil || parent.Number.Uint64() != number-1 || p.SealHash(parent) != header.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
 
@@ -454,6 +455,17 @@ func SealHash(header *types.Header) (hash common.Hash) {
 	encodeSigHeader(hasher, header)
 	hasher.Sum(hash[:0])
 	return hash
+}
+
+func DBlockSealHash(block dpos.DBlock) (hash ecom.Uint256, err error) {
+	if b, ok := block.(*types.Block); ok {
+		hasher := sha3.NewLegacyKeccak256()
+		encodeSigHeader(hasher, b.Header())
+		hasher.Sum(hash[:0])
+		return hash, nil
+	} else {
+		return ecom.EmptyHash, errors.New("verifyBlock errror, block is not ethereum block")
+	}
 }
 
 func PbftRLP(header *types.Header) []byte {
