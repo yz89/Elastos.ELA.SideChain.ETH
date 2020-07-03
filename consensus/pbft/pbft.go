@@ -243,8 +243,13 @@ func (p *Pbft) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	if len(parents) > 0 {
 		parent = parents[len(parents)-1]
 	} else {
-		parent = chain.GetHeader(header.ParentHash, number-1)
+		//parent = chain.GetHeader(header.ParentHash, number-1)
+		parent = chain.GetHeaderByNumber(number-1)
 	}
+
+	ph := parent.Hash()
+	fmt.Println("11111", common.Bytes2Hex(ph[:]))
+	fmt.Println("22222", common.Bytes2Hex(header.ParentHash[:]))
 
 	if parent == nil || parent.Number.Uint64() != number-1 || p.SealHash(parent) != header.ParentHash {
 		return consensus.ErrUnknownAncestor
