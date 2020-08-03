@@ -371,6 +371,12 @@ func (p *Pbft) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	nowTime := uint64(p.dispatcher.GetNowTime().Unix())
 	p.Start(parent.Time)
 	if !p.IsOnduty() {
+		// test normal quit
+		//if header.Number.Uint64() == 3 {
+		//	panic("testing normal quit")
+		//}
+
+		// test the proposal sent by the error which not on duty.
 		return errors.New("local singer is not on duty")
 	}
 
@@ -416,13 +422,24 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 		return errors.New("no signer inited")
 	}
 	if !p.IsOnduty() {
+		// test the proposal sent by the error which not on duty.
 		return errors.New("local singer is not on duty")
 	}
 	p.BroadBlockMsg(block)
 
+	// test node abnormal quit before start proposal
+	fmt.Println("block hash: ", p.SealHash(block.Header()).String())
+	panic("before start proposal")
+	// end test
+
 	if err := p.StartProposal(block); err != nil {
 		return err
 	}
+
+	// test node abnormal quit after send proposal
+	//panic("after send proposal")
+	// end test
+
 	p.isSealOver = false
 	header := block.Header()
 	//Waiting for statistics of voting results

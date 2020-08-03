@@ -25,6 +25,9 @@ func StartProposal(ac account.Account, blockHash common.Uint256, viewOffset uint
 	Info("[StartProposal] hash:", proposal.Hash().String())
 	proposal.Sign = sign
 
+	// test the error signature. Modify the signature.
+	//proposal.Sign[0] = 0x00
+
 	return proposal, nil
 }
 
