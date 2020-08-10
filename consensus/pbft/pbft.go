@@ -346,7 +346,7 @@ func (p *Pbft) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		//}
 
 		// test the proposal sent by the error which not on duty.
-		return errors.New("local singer is not on duty")
+		//return errors.New("local singer is not on duty")
 	}
 
 	if header.Number.Uint64() <= p.dispatcher.GetFinishedHeight() {
@@ -392,13 +392,14 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 	}
 	if !p.IsOnduty() {
 		// test the proposal sent by the error which not on duty.
-		return errors.New("local singer is not on duty")
+		//return errors.New("local singer is not on duty")
 	}
 	p.BroadPreBlock(block)
 
 	// test node abnormal quit before start proposal
-	fmt.Println("block hash: ", p.SealHash(block.Header()).String())
-	panic("before start proposal")
+	//fmt.Println("block hash: ", p.SealHash(block.Header()).String())
+	//time.Sleep(2*time.Second)
+	//panic("before start proposal")
 	// end test
 
 	if err := p.StartProposal(block); err != nil {
@@ -406,6 +407,7 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 	}
 
 	// test node abnormal quit after send proposal
+	//fmt.Println("block hash: ", p.SealHash(block.Header()).String())
 	//panic("after send proposal")
 	// end test
 
