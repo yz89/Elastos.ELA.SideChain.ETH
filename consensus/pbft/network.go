@@ -58,6 +58,10 @@ func (p *Pbft) StartProposal(block *types.Block) error {
 		go p.OnVoteAccepted(id, &voteMsg.Vote)
 		p.network.BroadcastMessage(voteMsg)
 	}
+
+	// test duplicate proposal
+	//p.network.BroadcastMessage(m)
+
 	return nil
 }
 
