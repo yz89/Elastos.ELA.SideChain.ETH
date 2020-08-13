@@ -243,6 +243,13 @@ func (d *Dispatcher) AcceptProposal(proposal *payload.DPOSProposal, ac account.A
 		Error("StartVote error", "err", err)
 		return nil
 	}
+
+	// test invalid signature
+	//vote.Sign[0] = 0x00
+
+	// test invalid proposal hash
+	//vote.ProposalHash[0] = 0x00
+
 	return &msg.Vote{Command: msg.CmdAcceptVote, Vote: *vote}
 }
 

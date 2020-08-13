@@ -377,7 +377,7 @@ func (p *Pbft) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		//}
 
 		// test the proposal sent by the error which not on duty.
-		//return errors.New("local singer is not on duty")
+		return errors.New("local singer is not on duty")
 	}
 
 	if header.Number.Uint64() <= p.dispatcher.GetFinishedHeight() {
@@ -423,7 +423,7 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 	}
 	if !p.IsOnduty() {
 		// test the proposal sent by the error which not on duty.
-		//return errors.New("local singer is not on duty")
+		return errors.New("local singer is not on duty")
 	}
 	p.BroadBlockMsg(block)
 

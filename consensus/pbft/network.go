@@ -307,6 +307,9 @@ func (p *Pbft) OnProposalReceived(id peer.PID, proposal *payload.DPOSProposal) {
 		voteMsg = p.dispatcher.RejectProposal(proposal, p.account)
 	} else {
 		voteMsg = p.dispatcher.AcceptProposal(proposal, p.account)
+
+		// test for reject proposal
+		//voteMsg = p.dispatcher.RejectProposal(proposal, p.account)
 	}
 
 	if handled {
@@ -315,6 +318,11 @@ func (p *Pbft) OnProposalReceived(id peer.PID, proposal *payload.DPOSProposal) {
 	}
 	if voteMsg != nil && !p.dispatcher.GetProposalProcessFinished() {
 		p.network.BroadcastMessage(voteMsg)
+
+		// test duplicate votes
+		//fmt.Println("duplicate vote")
+		//p.network.BroadcastMessage(voteMsg)
+
 		p.dispatcher.SetProposalProcessFinished()
 	}
 }
