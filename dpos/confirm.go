@@ -23,20 +23,17 @@ func CheckConfirm(confirm *payload.Confirm, minSignCount int) error {
 	for _, vote := range confirm.Votes {
 		if !vote.Accept {
 			Error("confirm contains reject vote", vote.Hash().String())
-			return errors.New("[CheckConfirm] confirm contains " +
-				"reject vote")
+			return errors.New("[CheckConfirm] confirm contains reject vote")
 		}
 
 		if !proposalHash.IsEqual(vote.ProposalHash) {
 			Error("proposal:", proposalHash.String(), "is not equal vote proposal:", vote.ProposalHash.String())
-			return errors.New("[CheckConfirm] confirm contains " +
-				"invalid vote")
+			return errors.New("[CheckConfirm] proposal hash is not equal vote proposal hash")
 		}
 
 		if err := CheckVote(&vote); err != nil {
 			Error("check vote error", "error", err.Error())
-			return errors.New("[CheckConfirm] confirm contain invalid " +
-				"vote: " + err.Error())
+			return errors.New("[CheckConfirm] confirm contain invalid vote: " + err.Error())
 		}
 	}
 

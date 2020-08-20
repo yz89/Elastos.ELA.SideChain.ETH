@@ -454,6 +454,19 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 	select {
 	case confirm := <-p.confirmCh:
 		log.Info("Received confirmCh", "proposal", confirm.Proposal.Hash().String(), "block:", block.NumberU64())
+
+		// test error votes count
+		//confirm.Votes = confirm.Votes[0:2]
+
+		// test error confirm which contain rejected vote
+		//confirm.Votes[0].Accept = false
+
+		// test for confirm proposal hash is not equal vote proposal hash
+		//confirm.Votes[0].ProposalHash[0]= 0x00
+
+		// test error confirm which contain invalid vote
+		//confirm.Votes[0].Sign[0] = 0x00
+
 		p.addConfirmToBlock(header, confirm)
 		p.isSealOver = true
 		break
