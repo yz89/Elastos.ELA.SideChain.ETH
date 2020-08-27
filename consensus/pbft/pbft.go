@@ -451,6 +451,15 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 	changeViewTime := p.dispatcher.GetConsensusView().GetChangeViewTime()
 	toleranceDelay := changeViewTime.Sub(p.dispatcher.GetNowTime())
 	log.Info("changeViewLeftTime", "toleranceDelay", toleranceDelay)
+
+	if header.Number.Uint64() == 10 {
+		changeViewTime = changeViewTime.Add(10 * time.Second)
+		toleranceDelay = changeViewTime.Sub(p.dispatcher.GetNowTime())
+		fmt.Println("延时广播", toleranceDelay)
+		time.Sleep(toleranceDelay)
+	}
+
+
 	select {
 	case confirm := <-p.confirmCh:
 		log.Info("Received confirmCh", "proposal", confirm.Proposal.Hash().String(), "block:", block.NumberU64())
@@ -466,6 +475,10 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 
 		// test error confirm which contain invalid vote
 		//confirm.Votes[0].Sign[0] = 0x00
+
+		// test for chain reorg
+		//fmt.Println("1111: sleep 10 seconds")
+		//time.Sleep(10 * time.Second)
 
 		p.addConfirmToBlock(header, confirm)
 		p.isSealOver = true
