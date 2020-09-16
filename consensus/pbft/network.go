@@ -337,6 +337,10 @@ func (p *Pbft) OnVoteAccepted(id peer.PID, vote *payload.DPOSProposalVote) {
 	if vote.Accept == true {
 		log.Info("OnVoteAccepted:", "hash:", vote.Hash().String())
 	}
+
+	// print proposal of vote
+	log.Info("OnVoteAccepted:", "proposal hash:", vote.ProposalHash.String())
+
 	if p.dispatcher.GetFinishedProposal().IsEqual(vote.ProposalHash) {
 		log.Info("all ready finished proposal, no need vote")
 		return

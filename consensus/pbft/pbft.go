@@ -372,7 +372,7 @@ func (p *Pbft) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	p.Start(parent.Time)
 	if !p.IsOnduty() {
 		// test normal quit
-		//if header.Number.Uint64() == 3 {
+		//if header.Number.Uint64() == 20 {
 		//	panic("testing normal quit")
 		//}
 
@@ -452,13 +452,12 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 	toleranceDelay := changeViewTime.Sub(p.dispatcher.GetNowTime())
 	log.Info("changeViewLeftTime", "toleranceDelay", toleranceDelay)
 
-	if header.Number.Uint64() == 10 {
-		changeViewTime = changeViewTime.Add(10 * time.Second)
-		toleranceDelay = changeViewTime.Sub(p.dispatcher.GetNowTime())
-		fmt.Println("延时广播", toleranceDelay)
-		time.Sleep(toleranceDelay)
-	}
-
+	//if header.Number.Uint64() == 10 {
+	//	changeViewTime = changeViewTime.Add(10 * time.Second)
+	//	toleranceDelay = changeViewTime.Sub(p.dispatcher.GetNowTime())
+	//	fmt.Println("延时广播", toleranceDelay)
+	//	time.Sleep(toleranceDelay)
+	//}
 
 	select {
 	case confirm := <-p.confirmCh:
