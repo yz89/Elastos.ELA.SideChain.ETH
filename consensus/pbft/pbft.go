@@ -473,11 +473,7 @@ func (p *Pbft) Seal(chain consensus.ChainReader, block *types.Block, results cha
 		//confirm.Votes[0].ProposalHash[0]= 0x00
 
 		// test error confirm which contain invalid vote
-		//confirm.Votes[0].Sign[0] = 0x00
-
-		// test for chain reorg
-		//fmt.Println("1111: sleep 10 seconds")
-		//time.Sleep(10 * time.Second)
+		confirm.Votes[0].Sign[0] = 0x00
 
 		p.addConfirmToBlock(header, confirm)
 		p.isSealOver = true

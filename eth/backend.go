@@ -597,6 +597,12 @@ func (s *Ethereum) shouldPreserve(block *types.Block) bool {
 			oldViewOffset := oldConfirm.Proposal.ViewOffset
 			newViewOffset := newConfirm.Proposal.ViewOffset
 			log.Info("detected chain fork", "oldViewOffset", oldViewOffset, "newViewOffset", newViewOffset, "SignersCount", s.engine.SignersCount())
+
+			fmt.Println("old block tx:", len(oldBlock.Transactions()))
+			for i, tx := range oldBlock.Transactions() {
+				fmt.Printf("tx%d: %s\n", i, tx.Hash().String())
+			}
+
 			return newViewOffset > oldViewOffset
 		}
 	}
