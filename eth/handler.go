@@ -805,6 +805,7 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool) {
 func (pm *ProtocolManager) BroadcastTxs(txs types.Transactions) {
 	var txset = make(map[*peer]types.Transactions)
 
+	fmt.Println("1111")
 	// Broadcast transactions to a batch of peers not knowing about it
 	blackAddr := common.Address{}
 	for _, tx := range txs {
@@ -816,7 +817,7 @@ func (pm *ProtocolManager) BroadcastTxs(txs types.Transactions) {
 		for _, peer := range peers {
 			txset[peer] = append(txset[peer], tx)
 		}
-		log.Trace("Broadcast transaction", "hash", tx.Hash(), "recipients", len(peers))
+		log.Info("Broadcast transaction", "hash", tx.Hash(), "recipients", len(peers))
 	}
 	// FIXME include this again: peers = peers[:int(math.Sqrt(float64(len(peers))))]
 	for peer, txs := range txset {
